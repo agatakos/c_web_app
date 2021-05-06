@@ -9,7 +9,7 @@ from sqlalchemy import Table, Column, String, MetaData
 Base = automap_base()
 
 engine = create_engine(
-    "postgresql://postgres:postgres@restapi.local:5432/Cuvva Tech Assesment"
+    "postgresql://postgres:postgres@localhost:5432/Cuvva Tech Assesment"
 )
 Base.prepare(engine, reflect=True)
 
