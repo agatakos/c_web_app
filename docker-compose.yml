@@ -1,0 +1,34 @@
+version: "3.9"
+services:
+    db:
+        image: postgres:latest
+        volumes:
+            - ./db-data/postgres:/var/lib/postgresql/data
+        environment:
+            - POSTGRES_DB=postgres
+            - POSTGRES_USER=postgres
+            - POSTGRES_HOST_AUTH_METHOD=trust
+            - POSTGRES_HOST=restapi.local
+        ports:
+            - "5430:5432"
+    migration:
+        build: .
+        environment:
+            - FLASK_ENV:development
+        command: flask db upgrade
+        depends_on:
+            - db
+    web:
+        build: .
+        ports:
+        - "5000:5000"
+        volumes:
+        - .:/app
+        environment:
+            - FLASK_ENV:development
+        links: 
+            - db:restapi.local
+        depends_on:
+            - db  
+        entrypoint: ["python", "manage.py","runserver"]
+
