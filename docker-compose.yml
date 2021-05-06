@@ -5,12 +5,12 @@ services:
         volumes:
             - ./db-data/postgres:/var/lib/postgresql/data
         environment:
-            - POSTGRES_DB=postgres
-            - POSTGRES_USER=postgres
+            - POSTGRES_DB=d88hk73hm5jqgj
+            - POSTGRES_USER=jvfcxqlngmjtvz
             - POSTGRES_HOST_AUTH_METHOD=trust
-            - POSTGRES_HOST=restapi.local
+            - POSTGRES_HOST=ec2-23-22-191-232.compute-1.amazonaws.com
         ports:
-            - "5430:5432"
+            - "5432:5432"
     migration:
         build: .
         environment:
