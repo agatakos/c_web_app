@@ -10,7 +10,7 @@ services:
             - POSTGRES_HOST_AUTH_METHOD=trust
             - POSTGRES_HOST=ec2-54-228-139-34.eu-west-1.compute.amazonaws.com
         ports:
-            - "5432:5432"
+            - "5433:5432"
     migration:
         build: .
         environment:
