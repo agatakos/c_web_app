@@ -2,6 +2,7 @@ from flask_api import FlaskAPI
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import and_, distinct
 from flask import request, jsonify, abort, make_response
+from flask_migrate import Migrate, MigrateCommand
 from instance.config import app_config
 from datetime import datetime
 
@@ -15,7 +16,7 @@ def create_app(config_name):
     from app.models import Policy, Policy_Day, User_Month, Finance, session
 
     app = FlaskAPI(__name__, instance_relative_config=True)
-    app.config.from_object(app_config[DevelopmentConfig])
+    app.config.from_object(app_config[config_name])
     app.config.from_pyfile("config.py")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     db.init_app(app)
