@@ -9,6 +9,7 @@ from datetime import datetime
 # initialize sql-alchemy
 db = SQLAlchemy()
 
+
 # create app
 def create_app(config_name):
     from app.models import Policy, Policy_Day, User_Month, Finance, session
