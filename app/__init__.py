@@ -38,7 +38,7 @@ def create_app(config_name):
         }
         return obj
 
-    @app.route("/policy_count", methods=["GET"])
+    @app.route("/policy_count/", methods=["GET"])
     def policy_counts():
         policies = (
             session.query(
@@ -97,7 +97,7 @@ def create_app(config_name):
         results = []
 
         for p in policy:
-            obj = {"user": p.user_id, "days_active": p.days_active}
+            obj = {"UserId": p.user_id, "daysActive": p.days_active}
 
             results.append(obj)
 
@@ -122,14 +122,14 @@ def create_app(config_name):
         results = []
 
         for p in policy:
-            obj = {"user": p.user_id, "days_active": p.days_active}
+            obj = {"UserId": p.user_id, "DaysActive": p.days_active}
 
             results.append(obj)
 
         return make_response(jsonify(results)), 200
 
-    @app.route("/new_user_count", methods=["GET"])
-    def new_user_count(page):
+    @app.route("/new_user_count/", methods=["GET"])
+    def new_user_count():
         new_users = (
             session.query(
                 Policy_Day.c.date,
@@ -141,7 +141,7 @@ def create_app(config_name):
             .all()
         )
 
-        results = paginate([], page)
+        results = []
 
         for n in new_users:
             obj = {
@@ -182,6 +182,38 @@ def create_app(config_name):
 
         return make_response(jsonify(results)), 200
 
+    @app.route("/lapsed_users_count/", methods=["GET"])
+    def lapsed_users_count():
+        lapsed_users = (
+            session.query(
+                User_Month.c.year_month,
+                db.func.count(User_Month.c.user_id).label("count_of_users"),
+                User_Month.c.user_lifecycle_status.label("status"),
+            )
+            .filter(
+                and_(
+                    User_Month.c.user_lifecycle_status == "lapsed",
+                )
+            )
+            .group_by(
+                User_Month.c.year_month, User_Month.c.user_lifecycle_status
+            )
+            .all()
+        )
+
+        results = []
+
+        for l in lapsed_users:
+            obj = {
+                "LapsedUserCount": l.count_of_users,
+                "Month": l.year_month,
+                "Status": l.status,
+            }
+
+            results.append(obj)
+
+        return make_response(jsonify(results)), 200
+
     @app.route("/lapsed_users_count/<string:year_month>", methods=["GET"])
     def lapsed_users(year_month):
         lapsed_users = (
@@ -216,45 +248,10 @@ def create_app(config_name):
         return make_response(jsonify(results)), 200
 
     @app.route(
-        "/new_user_premiums",
+        "/new_user_premiums/<string:underwriter>",
         methods=["GET"],
     )
-    def new_user_premium():
-        new_user_premium = (
-            (
-                session.query(
-                    db.func.sum(distinct(Finance.premium)).label(
-                        "premium_total"
-                    ),
-                )
-            )
-            .join(Finance, Finance.policy_id == Policy.policy_id)
-            .join(User_Month, User_Month.c.user_id == Policy.user_id)
-            .filter(
-                and_(
-                    User_Month.c.user_lifecycle_status == "new",
-                    Finance.reason == "policy_sale",
-                )
-            )
-            .group_by(Policy.underwriter)
-            .all()
-        )
-
-        results = []
-
-        for p in new_user_premium:
-            obj = {
-                "Underwriter": p.underwriter,
-                "PremiumTotals": p.premium_total,
-            }
-
-            results.append(obj)
-
-    @app.route(
-        "/new_user_premiums/<string:underwriter>/<string:year_month>",
-        methods=["GET"],
-    )
-    def new_user_premiums(underwriter, year_month):
+    def new_user_premiums(underwriter):
         new_user_premiums = (
             (
                 session.query(
