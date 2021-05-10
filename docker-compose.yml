@@ -11,13 +11,6 @@ services:
             - POSTGRES_HOST=ec2-54-228-139-34.eu-west-1.compute.amazonaws.com
         ports:
             - "5433:5432"
-    migration:
-        build: .
-        environment:
-            - FLASK_ENV:development
-        command: flask db upgrade
-        depends_on:
-            - db
     web:
         build: .
         ports:

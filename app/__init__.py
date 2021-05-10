@@ -33,6 +33,26 @@ def create_app(config_name):
         }
         return obj
 
+    @app.route("/policy_count", methods=["GET"])
+    def policy_count():
+        policy = (
+            session.query(
+                Policy.user_id,
+                db.func.count(Policy.policy_id).label("policy_count"),
+            )
+            .group_by(Policy.user_id)
+            .all()
+        )
+
+        results = []
+
+        for p in policy:
+            obj = {"UserId": p.user_id, "PolicyCount": p.policy_count}
+
+            results.append(obj)
+
+        return make_response(jsonify(results)), 200
+
     @app.route("/policy_count/<string:user_id>", methods=["GET"])
     def policy_count(user_id: str):
         policy = (
@@ -140,8 +160,47 @@ def create_app(config_name):
 
         return make_response(jsonify(results)), 200
 
-    @app.route("/new_user_premiums/<string:underwriter>", methods=["GET"])
-    def new_user_premiums(underwriter):
+    @app.route(
+        "/new_user_premiums",
+        methods=["GET"],
+    )
+    def new_user_premium():
+        new_user_premiums = (
+            (
+                session.query(
+                    Policy.underwriter,
+                    db.func.sum(distinct(Finance.premium)).label(
+                        "premium_total"
+                    ),
+                )
+            )
+            .join(Finance, Finance.policy_id == Policy.policy_id)
+            .join(User_Month, User_Month.c.user_id == Policy.user_id)
+            .filter(
+                and_(
+                    User_Month.c.user_lifecycle_status == "new",
+                    Finance.reason == "policy_sale",
+                )
+            )
+            .group_by(Policy.underwriter)
+            .all()
+        )
+
+        results = []
+
+        for p in new_user_premium:
+            obj = {
+                "Underwriter": p.underwriter,
+                "PremiumTotals": p.premium_total,
+            }
+
+            results.append(obj)
+
+    @app.route(
+        "/new_user_premiums/<string:underwriter>/<string:year_month>",
+        methods=["GET"],
+    )
+    def new_user_premiums(underwriter, year_month):
         new_user_premiums = (
             (
                 session.query(
