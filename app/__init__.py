@@ -1,5 +1,5 @@
 from flask_api import FlaskAPI
-from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy, BaseQuery
 from sqlalchemy import and_, distinct
 from flask import request, jsonify, abort, make_response
 from flask_migrate import Migrate, MigrateCommand
@@ -9,6 +9,11 @@ from datetime import datetime
 
 # initialize sql-alchemy
 db = SQLAlchemy()
+
+# paginate long results
+def paginate(sa_query, page, per_page=20, error_out=True):
+    sa_query.__class__ = BaseQuery
+    return sa_query.paginate(page, per_page, error_out)
 
 
 # create app
@@ -124,7 +129,7 @@ def create_app(config_name):
         return make_response(jsonify(results)), 200
 
     @app.route("/new_user_count", methods=["GET"])
-    def new_users():
+    def new_user_count(page):
         new_users = (
             session.query(
                 Policy_Day.c.date,
@@ -135,7 +140,8 @@ def create_app(config_name):
             .group_by(Policy_Day.c.date, Policy_Day.c.status)
             .all()
         )
-        results = []
+
+        results = paginate([], page)
 
         for n in new_users:
             obj = {
