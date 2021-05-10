@@ -34,8 +34,8 @@ def create_app(config_name):
         return obj
 
     @app.route("/policy_count", methods=["GET"])
-    def policy_count():
-        policy = (
+    def policy_counts():
+        policies = (
             session.query(
                 Policy.user_id,
                 db.func.count(Policy.policy_id).label("policy_count"),
@@ -46,7 +46,7 @@ def create_app(config_name):
 
         results = []
 
-        for p in policy:
+        for p in policies:
             obj = {"UserId": p.user_id, "PolicyCount": p.policy_count}
 
             results.append(obj)
@@ -74,8 +74,32 @@ def create_app(config_name):
 
         return make_response(jsonify(results)), 200
 
+    @app.route("/days_active/", methods=["GET"])
+    def days_active():
+        policy = (
+            session.query(
+                Policy.user_id,
+                db.func.extract(
+                    "day",
+                    db.func.max(Policy.policy_end_date)
+                    - db.func.min(Policy.policy_start_date),
+                ).label("days_active"),
+            )
+            .group_by(Policy.user_id)
+            .all()
+        )
+
+        results = []
+
+        for p in policy:
+            obj = {"user": p.user_id, "days_active": p.days_active}
+
+            results.append(obj)
+
+        return make_response(jsonify(results)), 200
+
     @app.route("/days_active/<string:user_id>", methods=["GET"])
-    def days_active(user_id: str):
+    def days_active_u(user_id: str):
         policy = (
             session.query(
                 Policy.user_id,
@@ -94,6 +118,31 @@ def create_app(config_name):
 
         for p in policy:
             obj = {"user": p.user_id, "days_active": p.days_active}
+
+            results.append(obj)
+
+        return make_response(jsonify(results)), 200
+
+    @app.route("/new_user_count", methods=["GET"])
+    def new_users():
+        new_users = (
+            session.query(
+                Policy_Day.c.date,
+                db.func.count(Policy_Day.c.user_id).label("count_of_users"),
+                Policy_Day.c.status,
+            )
+            .filter(Policy_Day.c.status == "New")
+            .group_by(Policy_Day.c.date, Policy_Day.c.status)
+            .all()
+        )
+        results = []
+
+        for n in new_users:
+            obj = {
+                "NewUserCount": n.count_of_users,
+                "Date": n.date,
+                "Status": n.status,
+            }
 
             results.append(obj)
 
@@ -165,10 +214,9 @@ def create_app(config_name):
         methods=["GET"],
     )
     def new_user_premium():
-        new_user_premiums = (
+        new_user_premium = (
             (
                 session.query(
-                    Policy.underwriter,
                     db.func.sum(distinct(Finance.premium)).label(
                         "premium_total"
                     ),
